@@ -16,13 +16,17 @@ import {
   ChevronRight,
   Target,
   Filter,
-  Cpu
+  Cpu,
+  Send,
+  ShieldCheck,
+  Globe
 } from 'lucide-react';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'HOME' | 'PROJECTS' | 'EXPERIENCE' | 'SKILLS'>('HOME');
+  const [activeTab, setActiveTab] = useState<'HOME' | 'PROJECTS' | 'EXPERIENCE' | 'SKILLS' | 'CONTACT'>('HOME');
   const [selectedTech, setSelectedTech] = useState<string | null>(null);
   const [bootSequence, setBootSequence] = useState(true);
+  const [isTransmitting, setIsTransmitting] = useState(false);
 
   // Extract all unique tech tags from projects
   const allTechTags = useMemo(() => {
@@ -40,6 +44,22 @@ const App: React.FC = () => {
     const timer = setTimeout(() => setBootSequence(false), 2000);
     return () => clearTimeout(timer);
   }, []);
+
+  const handleContactSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get('name');
+    const subject = formData.get('subject');
+    const message = formData.get('message');
+    
+    setIsTransmitting(true);
+    
+    // Simulate high-tech transmission
+    setTimeout(() => {
+      setIsTransmitting(false);
+      window.location.href = `mailto:annuetw143@gmail.com?subject=${encodeURIComponent(String(subject || 'Portfolio Inquiry'))}&body=${encodeURIComponent(`Name: ${name}\n\n${message}`)}`;
+    }, 2000);
+  };
 
   const renderContent = () => {
     switch(activeTab) {
@@ -143,7 +163,7 @@ const App: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredProjects.map((proj, i) => (
+              {filteredProjects.map((proj) => (
                 <ProjectCard key={proj.title} project={proj} />
               ))}
               {filteredProjects.length === 0 && (
@@ -232,6 +252,132 @@ const App: React.FC = () => {
             ))}
           </div>
         );
+      case 'CONTACT':
+        return (
+          <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
+              {/* Left Column: Direct Links & Info */}
+              <div className="lg:col-span-2 space-y-8">
+                <div className="glass p-8 rounded-2xl border-l-4 border-green-500 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
+                    <Send size={80} className="text-green-500" />
+                  </div>
+                  <h2 className="text-3xl font-black text-zinc-100 mb-6 uppercase tracking-tighter italic">Comms_Link</h2>
+                  <p className="text-zinc-400 mb-8 leading-relaxed">
+                    Always open to new collaborations, high-impact game projects, or XR simulation opportunities.
+                  </p>
+                  
+                  <div className="space-y-6">
+                    <a href="mailto:annuetw143@gmail.com" className="flex items-center group/link">
+                      <div className="p-3 bg-zinc-900 rounded-lg mr-4 border border-zinc-800 group-hover/link:border-green-500/50 transition-colors">
+                        <Mail className="text-green-500" size={20} />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] mono text-green-500/60 uppercase font-black">Email_Direct</span>
+                        <span className="text-zinc-200 font-bold group-hover/link:text-green-400 transition-colors">annuetw143@gmail.com</span>
+                      </div>
+                    </a>
+                    <div className="flex items-center group/link">
+                      <div className="p-3 bg-zinc-900 rounded-lg mr-4 border border-zinc-800">
+                        <Globe className="text-green-500" size={20} />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] mono text-green-500/60 uppercase font-black">Location_Base</span>
+                        <span className="text-zinc-200 font-bold">Uttar Pradesh, India</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center group/link">
+                      <div className="p-3 bg-zinc-900 rounded-lg mr-4 border border-zinc-800">
+                        <ShieldCheck className="text-green-500" size={20} />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] mono text-green-500/60 uppercase font-black">Security_Protocol</span>
+                        <span className="text-zinc-200 font-bold italic">Encrypted_Transmission_Enabled</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="glass p-6 rounded-2xl border border-zinc-800 flex justify-around">
+                  <a href="https://github.com" target="_blank" className="text-zinc-500 hover:text-green-500 transition-all hover:scale-125"><Github size={28} /></a>
+                  <a href="https://linkedin.com" target="_blank" className="text-zinc-500 hover:text-green-500 transition-all hover:scale-125"><Linkedin size={28} /></a>
+                  <a href="mailto:annuetw143@gmail.com" className="text-zinc-500 hover:text-green-500 transition-all hover:scale-125"><Mail size={28} /></a>
+                </div>
+              </div>
+
+              {/* Right Column: High-Tech Form */}
+              <div className="lg:col-span-3">
+                <div className="glass p-8 rounded-2xl border border-green-500/10 relative overflow-hidden">
+                   {isTransmitting && (
+                     <div className="absolute inset-0 bg-black/90 z-50 flex items-center justify-center">
+                        <div className="w-full max-w-sm px-6">
+                           <Terminal 
+                              title="ENCRYPTING_DATA" 
+                              lines={[
+                                "GENERATING HANDSHAKE...",
+                                "WRAPPING PACKETS IN TLS...",
+                                "BYPASSING FIREWALLS...",
+                                "UPLINK ESTABLISHED.",
+                                "REDIRECTING TO COMMS_CENTER..."
+                              ]} 
+                           />
+                        </div>
+                     </div>
+                   )}
+                  <form onSubmit={handleContactSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] mono text-green-500 font-black uppercase tracking-widest ml-1">Input.User_Name</label>
+                        <input 
+                          required 
+                          name="name"
+                          type="text" 
+                          placeholder="IDENTIFY YOURSELF"
+                          className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 placeholder:text-zinc-700 focus:outline-none focus:border-green-500/50 focus:ring-1 focus:ring-green-500/20 transition-all mono text-sm"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] mono text-green-500 font-black uppercase tracking-widest ml-1">Input.Subject_Header</label>
+                        <input 
+                          required
+                          name="subject"
+                          type="text" 
+                          placeholder="MISSION_OBJECTIVE"
+                          className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 placeholder:text-zinc-700 focus:outline-none focus:border-green-500/50 focus:ring-1 focus:ring-green-500/20 transition-all mono text-sm"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-[10px] mono text-green-500 font-black uppercase tracking-widest ml-1">Input.Transmission_Body</label>
+                      <textarea 
+                        required
+                        name="message"
+                        rows={6}
+                        placeholder="ENTER ENCRYPTED MESSAGE CONTENT HERE..."
+                        className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-4 text-zinc-100 placeholder:text-zinc-700 focus:outline-none focus:border-green-500/50 focus:ring-1 focus:ring-green-500/20 transition-all mono text-sm resize-none"
+                      />
+                    </div>
+
+                    <button 
+                      type="submit"
+                      className="w-full py-4 bg-green-500 hover:bg-green-400 text-black font-black mono text-xs uppercase tracking-[0.3em] rounded-xl transition-all shadow-[0_0_30px_rgba(34,197,94,0.2)] hover:shadow-[0_0_40px_rgba(34,197,94,0.4)] hover:scale-[1.01] active:scale-95 flex items-center justify-center group"
+                    >
+                      <Send size={16} className="mr-3 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                      Initiate_Transmission
+                    </button>
+                    
+                    <div className="flex items-center justify-between text-[8px] mono text-zinc-700 font-bold uppercase tracking-widest px-2">
+                       <span>Packet_Size: Auto</span>
+                       <span>Compression: GZIP</span>
+                       <span>Protocol: SMTP_SECURE</span>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
     }
   };
 
@@ -250,15 +396,12 @@ const App: React.FC = () => {
             </div>
           </div>
           
-          <nav className="flex items-center space-x-1 sm:space-x-4">
-            {(['HOME', 'PROJECTS', 'EXPERIENCE', 'SKILLS'] as const).map((tab) => (
+          <nav className="flex items-center space-x-1 sm:space-x-2 md:space-x-4">
+            {(['HOME', 'PROJECTS', 'EXPERIENCE', 'SKILLS', 'CONTACT'] as const).map((tab) => (
               <button
                 key={tab}
-                onClick={() => {
-                  setActiveTab(tab);
-                  // Reset filter when leaving projects tab if desired, but here we'll keep it for UX
-                }}
-                className={`text-[9px] sm:text-[11px] font-black mono tracking-widest uppercase transition-all relative py-2.5 px-4 rounded-lg
+                onClick={() => setActiveTab(tab)}
+                className={`text-[9px] sm:text-[11px] font-black mono tracking-widest uppercase transition-all relative py-2.5 px-3 sm:px-4 rounded-lg
                   ${activeTab === tab 
                     ? 'text-black bg-green-500 shadow-[0_0_20px_rgba(34,197,94,0.4)]' 
                     : 'text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800/50'}
@@ -272,7 +415,7 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Mission Control Area */}
-      <main className="max-w-7xl mx-auto w-full px-8 py-20 flex-1">
+      <main className="max-w-7xl mx-auto w-full px-8 py-12 md:py-20 flex-1">
         {renderContent()}
       </main>
 

@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { PROJECTS, EXPERIENCES, SKILLS } from './constants';
 import { ProjectCard } from './components/ProjectCard';
 import { Terminal } from './components/Terminal';
+import { Project } from './types';
 import { 
   Gamepad2, 
   User, 
@@ -11,24 +12,23 @@ import {
   Github, 
   Linkedin, 
   Mail, 
-  Phone,
-  LayoutGrid,
-  ChevronRight,
   Target,
   Filter,
   Cpu,
   Send,
   ShieldCheck,
-  Globe
+  Globe,
+  X,
+  Maximize2,
+  Activity
 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'HOME' | 'PROJECTS' | 'EXPERIENCE' | 'SKILLS' | 'CONTACT'>('HOME');
   const [selectedTech, setSelectedTech] = useState<string | null>(null);
-  const [bootSequence, setBootSequence] = useState(true);
   const [isTransmitting, setIsTransmitting] = useState(false);
+  const [activeSimulation, setActiveSimulation] = useState<Project | null>(null);
 
-  // Extract all unique tech tags from projects
   const allTechTags = useMemo(() => {
     const tags = new Set<string>();
     PROJECTS.forEach(p => p.tech.forEach(t => tags.add(t)));
@@ -40,11 +40,6 @@ const App: React.FC = () => {
     return PROJECTS.filter(p => p.tech.includes(selectedTech));
   }, [selectedTech]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setBootSequence(false), 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
   const handleContactSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -54,7 +49,6 @@ const App: React.FC = () => {
     
     setIsTransmitting(true);
     
-    // Simulate high-tech transmission
     setTimeout(() => {
       setIsTransmitting(false);
       window.location.href = `mailto:annuetw143@gmail.com?subject=${encodeURIComponent(String(subject || 'Portfolio Inquiry'))}&body=${encodeURIComponent(`Name: ${name}\n\n${message}`)}`;
@@ -96,7 +90,7 @@ const App: React.FC = () => {
                     <Linkedin size={24} />
                     <div className="absolute inset-0 bg-green-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </a>
-                  <a href="https://github.com" target="_blank" className="p-4 glass rounded-xl hover:text-green-500 transition-all hover:scale-110 group relative overflow-hidden">
+                  <a href="https://github.com/Annu769" target="_blank" className="p-4 glass rounded-xl hover:text-green-500 transition-all hover:scale-110 group relative overflow-hidden">
                     <Github size={24} />
                     <div className="absolute inset-0 bg-green-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </a>
@@ -120,7 +114,7 @@ const App: React.FC = () => {
                     "DEPLOYMENT_REGION: INDIA",
                     "TECH_STACK: UNITY / C# / AR / VR",
                     "XP_LEVEL: JUNIOR_ARCHITECT",
-                    "COMPLETED_SIMS: 5+",
+                    "COMPLETED_SIMS: 6+",
                     "READY_STATE: CRITICAL_PASS",
                     "MISSION: BUILD_THE_FUTURE_OF_GAMING"
                   ]} 
@@ -132,7 +126,6 @@ const App: React.FC = () => {
       case 'PROJECTS':
         return (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
-            {/* HUD Filter System */}
             <div className="glass p-4 rounded-xl border border-green-500/10 flex flex-col md:flex-row md:items-center gap-4">
               <div className="flex items-center space-x-3 text-zinc-500 mono text-xs font-bold uppercase tracking-widest border-r border-zinc-800 pr-4 mr-2">
                 <Filter size={14} className="text-green-500" />
@@ -155,25 +148,16 @@ const App: React.FC = () => {
                   </button>
                 ))}
               </div>
-              {selectedTech && (
-                <div className="ml-auto text-[10px] mono text-green-500/60 font-bold hidden md:block">
-                  MATCHES_FOUND: {filteredProjects.length}
-                </div>
-              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredProjects.map((proj) => (
-                <ProjectCard key={proj.title} project={proj} />
+                <ProjectCard 
+                  key={proj.title} 
+                  project={proj} 
+                  onPlay={() => setActiveSimulation(proj)}
+                />
               ))}
-              {filteredProjects.length === 0 && (
-                <div className="col-span-full py-20 text-center glass rounded-2xl border-dashed border-2 border-green-500/20">
-                  <div className="mono text-zinc-500 text-lg uppercase tracking-widest flex flex-col items-center">
-                    <Cpu size={48} className="mb-4 text-zinc-800 animate-pulse" />
-                    No Matching Protocols Located
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         );
@@ -224,11 +208,11 @@ const App: React.FC = () => {
             {SKILLS.map((group, i) => (
               <div key={i} className="glass p-8 rounded-2xl border border-green-500/20 group relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                   {i === 0 ? <Code2 size={120} /> : i === 1 ? <Gamepad2 size={120} /> : <LayoutGrid size={120} />}
+                   {i === 0 ? <Code2 size={120} /> : i === 1 ? <Gamepad2 size={120} /> : <Cpu size={120} />}
                 </div>
                 <div className="flex items-center space-x-4 mb-8 relative">
                   <div className="p-3 bg-green-500/10 rounded-xl text-green-500 group-hover:scale-110 transition-transform">
-                    {i === 0 ? <Code2 size={28} /> : i === 1 ? <Gamepad2 size={28} /> : <LayoutGrid size={28} />}
+                    {i === 0 ? <Code2 size={28} /> : i === 1 ? <Gamepad2 size={28} /> : <Cpu size={28} />}
                   </div>
                   <h3 className="text-xl font-black tracking-[0.2em] uppercase text-zinc-100">{group.category}</h3>
                 </div>
@@ -256,7 +240,6 @@ const App: React.FC = () => {
         return (
           <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-6xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
-              {/* Left Column: Direct Links & Info */}
               <div className="lg:col-span-2 space-y-8">
                 <div className="glass p-8 rounded-2xl border-l-4 border-green-500 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
@@ -297,15 +280,8 @@ const App: React.FC = () => {
                     </div>
                   </div>
                 </div>
-
-                <div className="glass p-6 rounded-2xl border border-zinc-800 flex justify-around">
-                  <a href="https://github.com" target="_blank" className="text-zinc-500 hover:text-green-500 transition-all hover:scale-125"><Github size={28} /></a>
-                  <a href="https://linkedin.com" target="_blank" className="text-zinc-500 hover:text-green-500 transition-all hover:scale-125"><Linkedin size={28} /></a>
-                  <a href="mailto:annuetw143@gmail.com" className="text-zinc-500 hover:text-green-500 transition-all hover:scale-125"><Mail size={28} /></a>
-                </div>
               </div>
 
-              {/* Right Column: High-Tech Form */}
               <div className="lg:col-span-3">
                 <div className="glass p-8 rounded-2xl border border-green-500/10 relative overflow-hidden">
                    {isTransmitting && (
@@ -366,12 +342,6 @@ const App: React.FC = () => {
                       <Send size={16} className="mr-3 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                       Initiate_Transmission
                     </button>
-                    
-                    <div className="flex items-center justify-between text-[8px] mono text-zinc-700 font-bold uppercase tracking-widest px-2">
-                       <span>Packet_Size: Auto</span>
-                       <span>Compression: GZIP</span>
-                       <span>Protocol: SMTP_SECURE</span>
-                    </div>
                   </form>
                 </div>
               </div>
@@ -383,10 +353,87 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen relative flex flex-col">
+      {/* Simulation Room Modal */}
+      {activeSimulation && (
+        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-2xl flex flex-col animate-in fade-in duration-500">
+          <div className="bg-zinc-900 border-b border-green-500/20 px-6 py-4 flex items-center justify-between">
+             <div className="flex items-center space-x-4">
+                <div className="p-2 bg-green-500 rounded-lg text-black">
+                   <Gamepad2 size={18} />
+                </div>
+                <div>
+                   <h2 className="text-zinc-100 font-black italic uppercase tracking-tighter">SIMULATION: {activeSimulation.title}</h2>
+                   <div className="flex items-center space-x-4 text-[9px] mono text-green-500/60 font-black">
+                      <span className="flex items-center"><Activity size={10} className="mr-1" /> UPLINK_STABLE</span>
+                      <span>RESOLUTION: DYNAMIC</span>
+                   </div>
+                </div>
+             </div>
+             <div className="flex items-center space-x-3">
+                <button 
+                  onClick={() => setActiveSimulation(null)}
+                  className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-black px-4 py-2 rounded-lg mono text-[10px] font-black uppercase tracking-widest transition-all border border-red-500/30 flex items-center"
+                >
+                  <X size={14} className="mr-2" />
+                  Terminate_Simulation
+                </button>
+             </div>
+          </div>
+          
+          <div className="flex-1 relative flex">
+             {/* Simulation Sidebar */}
+             <div className="hidden lg:flex w-72 border-r border-green-500/10 flex-col p-6 space-y-6">
+                <div className="space-y-2">
+                   <label className="text-[9px] mono text-zinc-500 uppercase font-black">Build_Metadata</label>
+                   <div className="p-4 glass rounded-xl border border-zinc-800 space-y-3">
+                      <div className="flex justify-between items-center text-[10px] mono">
+                         <span className="text-zinc-400">ENGINE</span>
+                         <span className="text-green-500">UNITY_WEBGL</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] mono">
+                         <span className="text-zinc-400">ARCH</span>
+                         <span className="text-green-500">{activeSimulation.type}</span>
+                      </div>
+                   </div>
+                </div>
+                <div className="flex-1">
+                   <Terminal 
+                      title="SIM_LOGS" 
+                      lines={[
+                        `INIT ${activeSimulation.title}`,
+                        "ALLOCATING_BUFFERS...",
+                        "LOADING_ASSETS...",
+                        "READY_TO_START"
+                      ]} 
+                   />
+                </div>
+             </div>
+
+             {/* Iframe Viewport */}
+             <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden">
+                <div className="absolute inset-0 pointer-events-none z-10 opacity-20 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%]" />
+                {activeSimulation.play ? (
+                  <iframe 
+                    src={activeSimulation.play}
+                    className="w-full h-full border-0"
+                    allow="autoplay; fullscreen; keyboard"
+                    title={activeSimulation.title}
+                  />
+                ) : (
+                  <div className="text-center space-y-4">
+                     <Cpu size={48} className="mx-auto text-green-500 animate-pulse" />
+                     <p className="mono text-zinc-500 text-xs uppercase tracking-[0.3em]">No Playable WebGL Link Provided</p>
+                  </div>
+                )}
+             </div>
+          </div>
+        </div>
+      )}
+
       {/* HUD Header */}
       <header className="sticky top-0 z-40 bg-black/60 backdrop-blur-xl border-b border-green-500/10 px-8 py-5">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-4 group cursor-pointer">
+          <div className="flex items-center space-x-4 group cursor-pointer" onClick={() => setActiveTab('HOME')}>
             <div className="w-10 h-10 bg-green-500 flex items-center justify-center font-black text-black rounded-lg transform rotate-45 group-hover:rotate-0 transition-transform duration-500">
                <span className="-rotate-45 group-hover:rotate-0 transition-transform">AK</span>
             </div>
@@ -414,12 +461,10 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Mission Control Area */}
       <main className="max-w-7xl mx-auto w-full px-8 py-12 md:py-20 flex-1">
         {renderContent()}
       </main>
 
-      {/* Footer Info HUD */}
       <footer className="bg-black/80 backdrop-blur-md border-t border-green-500/10 px-8 py-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-[10px] mono text-zinc-500 font-bold uppercase tracking-widest">
           <div className="flex items-center space-x-10">

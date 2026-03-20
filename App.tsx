@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { PROJECTS, EXPERIENCES, SKILLS } from './constants';
 import { ProjectCard } from './components/ProjectCard';
 import { Terminal } from './components/Terminal';
@@ -19,15 +19,26 @@ import {
   ShieldCheck,
   Globe,
   X,
-  Maximize2,
-  Activity
+  Activity,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'HOME' | 'PROJECTS' | 'EXPERIENCE' | 'SKILLS' | 'CONTACT'>('HOME');
   const [selectedTech, setSelectedTech] = useState<string | null>(null);
   const [isTransmitting, setIsTransmitting] = useState(false);
   const [activeSimulation, setActiveSimulation] = useState<Project | null>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = (window.scrollY / totalHeight) * 100;
+      setScrollProgress(progress);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const allTechTags = useMemo(() => {
     const tags = new Set<string>();
@@ -39,6 +50,17 @@ const App: React.FC = () => {
     if (!selectedTech) return PROJECTS;
     return PROJECTS.filter(p => p.tech.includes(selectedTech));
   }, [selectedTech]);
+
+  const skillProgress = useMemo(() => {
+    const progressMap: Record<string, number> = {};
+    SKILLS.forEach(group => {
+      group.items.forEach(skill => {
+        // Generate a random percentage between 50 and 80
+        progressMap[skill] = Math.floor(Math.random() * 31) + 50;
+      });
+    });
+    return progressMap;
+  }, []);
 
   const handleContactSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -55,144 +77,208 @@ const App: React.FC = () => {
     }, 2000);
   };
 
-  const renderContent = () => {
-    switch(activeTab) {
-      case 'HOME':
-        return (
-          <div className="animate-in fade-in slide-in-from-bottom-8 duration-1000">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              <div className="space-y-10">
-                <div className="relative">
-                  <div className="absolute -left-4 top-0 bottom-0 w-1 bg-green-500/50 shadow-[0_0_15px_rgba(34,197,94,0.5)]" />
-                  <h1 className="text-7xl font-black mb-4 tracking-tighter text-zinc-100 uppercase">
-                    Annu <span className="text-green-500 glow-text">Kushwah</span>
-                  </h1>
-                  <div className="flex items-center space-x-3 text-zinc-400">
-                    <Target size={20} className="text-green-500 animate-pulse" />
-                    <h2 className="text-2xl font-bold tracking-widest uppercase mono">
-                      Game Architect / XR Dev
-                    </h2>
-                  </div>
-                </div>
-                
-                <p className="text-xl text-zinc-300 leading-relaxed max-w-xl font-light">
-                  Crafting high-fidelity <span className="text-green-400 font-medium">3D worlds</span> and immersive 
-                  <span className="text-green-400 font-medium"> AR/VR experiences</span>. Specialized in Unity engine 
-                  optimization and advanced AI systems for professional simulation.
-                </p>
+  const SectionTitle = ({ icon: Icon, title, id, subtitle }: { icon: any, title: string, id: string, subtitle: string }) => (
+    <div id={id} className="mb-16 pt-24 scroll-mt-24">
+      <div className="flex items-center space-x-4 mb-4">
+        <div className="p-3 bg-cyan-500/10 rounded-xl text-cyan-400 border border-cyan-500/20">
+          <Icon size={24} />
+        </div>
+        <div>
+          <h2 className="text-4xl font-black text-zinc-100 uppercase tracking-tighter italic section-header relative">{title}</h2>
+          <p className="text-xs font-bold mono text-zinc-500 mt-2 uppercase tracking-[0.2em]">{subtitle}</p>
+        </div>
+      </div>
+      <div className="w-full h-px bg-gradient-to-r from-cyan-500/30 via-zinc-800 to-transparent" />
+    </div>
+  );
 
-                <div className="flex items-center space-x-6">
-                  <a href="mailto:annuetw143@gmail.com" className="p-4 glass rounded-xl hover:text-green-500 transition-all hover:scale-110 group relative overflow-hidden">
-                    <Mail size={24} />
-                    <div className="absolute inset-0 bg-green-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </a>
-                  <a href="https://linkedin.com" target="_blank" className="p-4 glass rounded-xl hover:text-green-500 transition-all hover:scale-110 group relative overflow-hidden">
-                    <Linkedin size={24} />
-                    <div className="absolute inset-0 bg-green-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </a>
-                  <a href="https://github.com/Annu769" target="_blank" className="p-4 glass rounded-xl hover:text-green-500 transition-all hover:scale-110 group relative overflow-hidden">
-                    <Github size={24} />
-                    <div className="absolute inset-0 bg-green-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </a>
-                  
-                  <div className="glass px-6 py-3 rounded-xl flex items-center space-x-3 border border-green-500/30">
-                    <div className="relative">
-                       <div className="w-3 h-3 rounded-full bg-green-500 animate-ping absolute" />
-                       <div className="w-3 h-3 rounded-full bg-green-500 relative" />
-                    </div>
-                    <span className="text-xs font-black mono text-zinc-200 uppercase tracking-[0.2em]">Live_Status: Deployment_Ready</span>
+  return (
+    <div className="min-h-screen relative flex flex-col">
+      {/* Simulation Room Modal */}
+      {activeSimulation && (
+        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-3xl flex flex-col animate-in fade-in zoom-in-95 duration-500">
+          <div className="bg-slate-900 border-b border-cyan-500/20 px-6 py-4 flex items-center justify-between">
+             <div className="flex items-center space-x-4">
+                <div className="p-2 bg-gradient-to-br from-green-400 to-cyan-500 rounded-lg text-black">
+                   <Gamepad2 size={18} />
+                </div>
+                <div>
+                   <h2 className="text-zinc-100 font-black italic uppercase tracking-tighter">SIMULATION_LOAD: {activeSimulation.title}</h2>
+                   <div className="flex items-center space-x-4 text-[9px] mono text-cyan-400 font-black">
+                      <span className="flex items-center animate-pulse"><Activity size={10} className="mr-1" /> CORE_UPLINK: STABLE</span>
+                      <span className="text-zinc-500">RES: DYNAMIC_UI</span>
+                   </div>
+                </div>
+             </div>
+             <button 
+                onClick={() => setActiveSimulation(null)}
+                className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-black px-4 py-2 rounded-lg mono text-[10px] font-black uppercase tracking-widest transition-all border border-red-500/30 flex items-center"
+              >
+                <X size={14} className="mr-2" />
+                Terminate_Simulation
+             </button>
+          </div>
+          <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden">
+             <div className="absolute inset-0 pointer-events-none z-10 opacity-20 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%]" />
+             {activeSimulation.play ? (
+               <iframe 
+                 src={activeSimulation.play}
+                 className="w-full h-full border-0"
+                 allow="autoplay; fullscreen; keyboard"
+                 title={activeSimulation.title}
+               />
+             ) : (
+               <div className="text-center space-y-6 glass p-12 rounded-3xl border-cyan-500/30">
+                  <div className="relative inline-block">
+                    <Cpu size={64} className="text-cyan-500 animate-pulse" />
+                    <div className="absolute inset-0 blur-xl bg-cyan-500/30 animate-pulse" />
                   </div>
+                  <p className="mono text-cyan-400 text-sm font-bold uppercase tracking-[0.4em]">External Deployment Link Pending</p>
+                  <button onClick={() => setActiveSimulation(null)} className="text-xs text-zinc-500 hover:text-white mono underline underline-offset-4">Back to Matrix</button>
+               </div>
+             )}
+          </div>
+        </div>
+      )}
+
+      {/* HUD Header */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-cyan-500/10 px-8 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <a href="#introduction" className="flex items-center space-x-4 group">
+            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-cyan-500 flex items-center justify-center font-black text-black rounded-xl transform rotate-45 group-hover:rotate-0 transition-all duration-500 shadow-[0_0_20px_rgba(6,182,212,0.3)]">
+               <span className="-rotate-45 group-hover:rotate-0 transition-transform">AK</span>
+            </div>
+            <div className="flex flex-col">
+                <span className="text-sm font-black text-zinc-100 tracking-tighter">ANNU_KUSHWAH</span>
+                <span className="text-[9px] font-bold mono tracking-widest text-cyan-500/60 uppercase">System_Active_v2.5</span>
+            </div>
+          </a>
+          
+          <nav className="hidden md:flex items-center space-x-1 lg:space-x-2">
+            {[
+              { label: 'Introduction', id: 'introduction' },
+              { label: 'Experience', id: 'experience' },
+              { label: 'Skills', id: 'skills' },
+              { label: 'Projects', id: 'projects' },
+              { label: 'Contact', id: 'contact' }
+            ].map((nav) => (
+              <a
+                key={nav.id}
+                href={`#${nav.id}`}
+                className="text-[10px] font-black mono tracking-widest uppercase py-2 px-4 rounded-lg text-zinc-500 hover:text-cyan-400 hover:bg-cyan-500/5 transition-all"
+              >
+                {nav.label}
+              </a>
+            ))}
+          </nav>
+
+          <div className="w-32 hidden sm:block">
+            <div className="w-full bg-zinc-900 h-1 rounded-full overflow-hidden border border-zinc-800">
+               <div className="bg-gradient-to-r from-green-500 to-cyan-500 h-full transition-all duration-300" style={{ width: `${scrollProgress}%` }} />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto w-full px-8 flex-1">
+        
+        {/* INTRODUCTION SECTION */}
+        <section id="introduction" className="min-h-screen flex items-center pt-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center w-full">
+            <div className="space-y-12 animate-in fade-in slide-in-from-left-8 duration-1000">
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3 mb-6">
+                  <div className="h-px w-12 bg-cyan-500/50" />
+                  <span className="text-xs font-bold mono text-cyan-500 uppercase tracking-widest">Protocol: Introduction</span>
+                </div>
+                <h1 className="text-8xl font-black tracking-tighter text-zinc-100 uppercase leading-[0.85]">
+                  Architecting <br /> 
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-cyan-400 to-blue-500 glow-text">Digital Worlds</span>
+                </h1>
+                <div className="flex items-center space-x-3 text-zinc-400 mt-6">
+                  <Target size={20} className="text-cyan-500 animate-pulse" />
+                  <h2 className="text-2xl font-bold tracking-widest uppercase mono">
+                    Lead Game Dev / XR Engineer
+                  </h2>
                 </div>
               </div>
+              
+              <p className="text-xl text-zinc-400 leading-relaxed max-w-2xl font-light">
+                Merging <span className="text-cyan-400 font-medium">high-performance C#</span> with visionary 3D design to create 
+                unforgettable gaming and simulation experiences. From VR elevators to zombie-infested lands, I build the 
+                infrastructure of immersion.
+              </p>
 
-              <div className="hidden lg:block h-[450px] relative">
-                <div className="absolute -inset-4 bg-green-500/5 rounded-3xl blur-3xl" />
+              <div className="flex flex-wrap items-center gap-6">
+                <a href="#projects" className="px-8 py-4 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-black mono text-xs uppercase tracking-[0.2em] rounded-xl hover:scale-105 transition-all shadow-[0_0_30px_rgba(6,182,212,0.3)]">
+                  Explore_Deployments
+                </a>
+                <div className="flex space-x-4">
+                  <a href="https://github.com/Annu769" target="_blank" className="p-4 glass rounded-xl hover:text-cyan-500 transition-all hover:translate-y-[-4px]">
+                    <Github size={24} />
+                  </a>
+                  <a href="https://linkedin.com" target="_blank" className="p-4 glass rounded-xl hover:text-cyan-500 transition-all hover:translate-y-[-4px]">
+                    <Linkedin size={24} />
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div className="hidden lg:block relative group">
+              <div className="absolute -inset-10 bg-gradient-to-br from-green-500/10 to-cyan-500/10 rounded-full blur-3xl group-hover:opacity-100 opacity-50 transition-opacity" />
+              <div className="h-[500px] relative z-10">
                 <Terminal 
-                  title="CORE_MANIFEST"
+                  title="KERNEL_MANIFEST"
                   lines={[
-                    "USER_ID: ANNU_KUSHWAH",
-                    "DEPLOYMENT_REGION: INDIA",
-                    "TECH_STACK: UNITY / C# / AR / VR",
-                    "XP_LEVEL: JUNIOR_ARCHITECT",
-                    "COMPLETED_SIMS: 6+",
-                    "READY_STATE: CRITICAL_PASS",
-                    "MISSION: BUILD_THE_FUTURE_OF_GAMING"
+                    "AUTH_STATE: VALIDATED",
+                    "NAME: ANNU KUSHWAH",
+                    "ROLE: GAME_DEV_ENGINEER",
+                    "TECH: UNITY / C# / NETWORKING",
+                    "PASSION: AR_VR_SIMULATION",
+                    "LOCATION: IN_MATRIX_01",
+                    "STATUS: READY_TO_CODE"
                   ]} 
                 />
               </div>
             </div>
           </div>
-        );
-      case 'PROJECTS':
-        return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
-            <div className="glass p-4 rounded-xl border border-green-500/10 flex flex-col md:flex-row md:items-center gap-4">
-              <div className="flex items-center space-x-3 text-zinc-500 mono text-xs font-bold uppercase tracking-widest border-r border-zinc-800 pr-4 mr-2">
-                <Filter size={14} className="text-green-500" />
-                <span>Filter_Protocol:</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button 
-                  onClick={() => setSelectedTech(null)}
-                  className={`px-3 py-1.5 rounded-md text-[10px] mono font-bold transition-all border ${!selectedTech ? 'bg-green-500 text-black border-green-400 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-green-500/30 hover:text-zinc-300'}`}
-                >
-                  ALL_SYSTEMS
-                </button>
-                {allTechTags.map(tag => (
-                  <button 
-                    key={tag}
-                    onClick={() => setSelectedTech(tag === selectedTech ? null : tag)}
-                    className={`px-3 py-1.5 rounded-md text-[10px] mono font-bold transition-all border ${selectedTech === tag ? 'bg-green-500 text-black border-green-400 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-green-500/30 hover:text-zinc-300'}`}
-                  >
-                    {tag.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-            </div>
+        </section>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredProjects.map((proj) => (
-                <ProjectCard 
-                  key={proj.title} 
-                  project={proj} 
-                  onPlay={() => setActiveSimulation(proj)}
-                />
-              ))}
-            </div>
-          </div>
-        );
-      case 'EXPERIENCE':
-        return (
-          <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-5xl">
+        {/* EXPERIENCE SECTION */}
+        <section className="py-20">
+          <SectionTitle 
+            id="experience" 
+            icon={Briefcase} 
+            title="Career_Path" 
+            subtitle="Professional_Chronology" 
+          />
+          <div className="space-y-12 max-w-5xl">
             {EXPERIENCES.map((exp, i) => (
-              <div key={i} className="relative pl-12 border-l-2 border-green-500/20 group">
-                <div className="absolute -left-[11px] top-0 w-[20px] h-[20px] rounded-lg bg-black border-2 border-green-500 group-hover:rotate-45 transition-all shadow-[0_0_15px_rgba(34,197,94,0.5)] flex items-center justify-center">
-                   <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+              <div key={i} className="relative pl-12 border-l-2 border-cyan-500/20 group">
+                <div className="absolute -left-[11px] top-0 w-5 h-5 rounded-md bg-slate-950 border-2 border-cyan-500 group-hover:rotate-45 transition-all shadow-[0_0_15px_rgba(6,182,212,0.5)] flex items-center justify-center">
+                   <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full" />
                 </div>
-                <div className="glass p-8 rounded-2xl hover:border-green-500/50 transition-all group-hover:translate-x-2">
+                <div className="glass p-8 rounded-2xl hover:border-cyan-500/50 transition-all group-hover:translate-x-2">
                   <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                     <h3 className="text-3xl font-black text-zinc-100 tracking-tight uppercase italic">{exp.role}</h3>
-                    <div className="flex items-center space-x-2">
-                        <span className="text-xs font-black mono text-green-500 bg-green-500/10 px-4 py-1.5 rounded-lg border border-green-500/30">
-                        {exp.period}
-                        </span>
-                    </div>
+                    <span className="text-xs font-black mono text-cyan-400 bg-cyan-500/5 px-4 py-2 rounded-lg border border-cyan-500/20">
+                      {exp.period}
+                    </span>
                   </div>
-                  <h4 className="text-green-500 font-black mb-6 flex items-center text-lg tracking-widest">
-                    <Briefcase size={20} className="mr-3" />
+                  <h4 className="text-cyan-500 font-bold mb-6 flex items-center text-lg tracking-widest">
                     {exp.company}
                   </h4>
                   <ul className="space-y-4 mb-8">
                     {exp.description.map((desc, idx) => (
-                      <li key={idx} className="text-zinc-300 text-md leading-relaxed flex items-start">
-                        <div className="mt-1.5 mr-4 w-2 h-2 bg-green-500 rotate-45 flex-shrink-0" />
+                      <li key={idx} className="text-zinc-400 text-md leading-relaxed flex items-start">
+                        <ChevronRight size={16} className="mt-1 mr-3 text-cyan-500 flex-shrink-0" />
                         {desc}
                       </li>
                     ))}
                   </ul>
-                  <div className="flex flex-wrap gap-3">
+                  <div className="flex flex-wrap gap-2">
                     {exp.tech.map((t) => (
-                      <span key={t} className="text-[11px] font-bold mono bg-zinc-900/80 px-3 py-1.5 rounded-lg border border-zinc-800 text-zinc-400 hover:text-green-400 hover:border-green-500/30 transition-all cursor-default">
+                      <span key={t} className="text-[10px] font-bold mono bg-slate-900 px-3 py-1.5 rounded-md border border-zinc-800 text-zinc-500 hover:text-cyan-400 transition-colors">
                         {t}
                       </span>
                     ))}
@@ -201,32 +287,34 @@ const App: React.FC = () => {
               </div>
             ))}
           </div>
-        );
-      case 'SKILLS':
-        return (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        </section>
+
+        {/* SKILLS SECTION */}
+        <section className="py-20">
+          <SectionTitle 
+            id="skills" 
+            icon={Code2} 
+            title="Neural_Stack" 
+            subtitle="Technical_Proficiency" 
+          />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {SKILLS.map((group, i) => (
-              <div key={i} className="glass p-8 rounded-2xl border border-green-500/20 group relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                   {i === 0 ? <Code2 size={120} /> : i === 1 ? <Gamepad2 size={120} /> : <Cpu size={120} />}
-                </div>
-                <div className="flex items-center space-x-4 mb-8 relative">
-                  <div className="p-3 bg-green-500/10 rounded-xl text-green-500 group-hover:scale-110 transition-transform">
-                    {i === 0 ? <Code2 size={28} /> : i === 1 ? <Gamepad2 size={28} /> : <Cpu size={28} />}
-                  </div>
-                  <h3 className="text-xl font-black tracking-[0.2em] uppercase text-zinc-100">{group.category}</h3>
-                </div>
-                <div className="space-y-6 relative">
+              <div key={i} className="glass p-8 rounded-2xl border border-cyan-500/10 hover:border-cyan-500/40 transition-all group">
+                <h3 className="text-xl font-black tracking-[0.2em] uppercase text-zinc-100 mb-8 flex items-center">
+                  <span className="w-2 h-2 bg-cyan-500 rounded-full mr-3" />
+                  {group.category}
+                </h3>
+                <div className="space-y-6">
                   {group.items.map((skill) => (
-                    <div key={skill} className="relative group/skill">
+                    <div key={skill} className="group/skill">
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-md font-bold text-zinc-300 group-hover/skill:text-green-400 transition-colors">{skill}</span>
-                        <span className="text-[10px] mono text-green-500/60 uppercase">Ready</span>
+                        <span className="text-md font-bold text-zinc-300 group-hover/skill:text-cyan-400 transition-colors">{skill}</span>
+                        <span className="text-[10px] mono text-cyan-500/40 uppercase">{skillProgress[skill]}%_Ready</span>
                       </div>
-                      <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-zinc-800/50">
+                      <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
                         <div 
-                          className="bg-gradient-to-r from-green-900 to-green-500 h-full rounded-full shadow-[0_0_10px_rgba(34,197,94,0.3)] transition-all duration-1000" 
-                          style={{ width: '90%' }} 
+                          className="bg-gradient-to-r from-green-500 to-cyan-500 h-full transition-all duration-1000 group-hover:opacity-100 opacity-60" 
+                          style={{ width: `${skillProgress[skill]}%` }} 
                         />
                       </div>
                     </div>
@@ -235,257 +323,158 @@ const App: React.FC = () => {
               </div>
             ))}
           </div>
-        );
-      case 'CONTACT':
-        return (
-          <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
-              <div className="lg:col-span-2 space-y-8">
-                <div className="glass p-8 rounded-2xl border-l-4 border-green-500 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
-                    <Send size={80} className="text-green-500" />
-                  </div>
-                  <h2 className="text-3xl font-black text-zinc-100 mb-6 uppercase tracking-tighter italic">Comms_Link</h2>
-                  <p className="text-zinc-400 mb-8 leading-relaxed">
-                    Always open to new collaborations, high-impact game projects, or XR simulation opportunities.
-                  </p>
-                  
-                  <div className="space-y-6">
-                    <a href="mailto:annuetw143@gmail.com" className="flex items-center group/link">
-                      <div className="p-3 bg-zinc-900 rounded-lg mr-4 border border-zinc-800 group-hover/link:border-green-500/50 transition-colors">
-                        <Mail className="text-green-500" size={20} />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[10px] mono text-green-500/60 uppercase font-black">Email_Direct</span>
-                        <span className="text-zinc-200 font-bold group-hover/link:text-green-400 transition-colors">annuetw143@gmail.com</span>
-                      </div>
-                    </a>
-                    <div className="flex items-center group/link">
-                      <div className="p-3 bg-zinc-900 rounded-lg mr-4 border border-zinc-800">
-                        <Globe className="text-green-500" size={20} />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[10px] mono text-green-500/60 uppercase font-black">Location_Base</span>
-                        <span className="text-zinc-200 font-bold">Uttar Pradesh, India</span>
-                      </div>
+        </section>
+
+        {/* PROJECTS SECTION */}
+        <section className="py-20">
+          <SectionTitle 
+            id="projects" 
+            icon={Gamepad2} 
+            title="Deployments" 
+            subtitle="Operational_Builds" 
+          />
+          <div className="glass p-4 rounded-xl border border-cyan-500/10 mb-12 flex flex-col md:flex-row md:items-center gap-4">
+            <div className="flex items-center space-x-3 text-zinc-500 mono text-xs font-bold uppercase tracking-widest border-r border-zinc-800 pr-6 mr-2">
+              <Filter size={14} className="text-cyan-500" />
+              <span>Filter_Protocol:</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button 
+                onClick={() => setSelectedTech(null)}
+                className={`px-4 py-2 rounded-md text-[10px] mono font-bold transition-all border ${!selectedTech ? 'bg-cyan-500 text-black border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.4)]' : 'bg-slate-900 text-zinc-500 border-zinc-800'}`}
+              >
+                ALL_SYSTEMS
+              </button>
+              {allTechTags.map(tag => (
+                <button 
+                  key={tag}
+                  onClick={() => setSelectedTech(tag === selectedTech ? null : tag)}
+                  className={`px-4 py-2 rounded-md text-[10px] mono font-bold transition-all border ${selectedTech === tag ? 'bg-cyan-500 text-black border-cyan-400' : 'bg-slate-900 text-zinc-500 border-zinc-800 hover:text-cyan-400'}`}
+                >
+                  {tag.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            {filteredProjects.map((proj) => (
+              <ProjectCard 
+                key={proj.title} 
+                project={proj} 
+                onPlay={() => setActiveSimulation(proj)}
+              />
+            ))}
+          </div>
+        </section>
+
+        {/* CONTACT SECTION */}
+        <section className="py-20">
+          <SectionTitle 
+            id="contact" 
+            icon={Send} 
+            title="Comms_Relay" 
+            subtitle="Secure_Encrypted_Link" 
+          />
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
+            <div className="lg:col-span-2 space-y-8">
+              <div className="glass p-8 rounded-3xl border border-cyan-500/20 relative overflow-hidden h-full">
+                <div className="absolute top-0 right-0 p-8 opacity-10">
+                  <Mail size={120} className="text-cyan-500" />
+                </div>
+                <h3 className="text-2xl font-black text-zinc-100 mb-6 uppercase tracking-tight italic">Direct_Uplink</h3>
+                <p className="text-zinc-400 mb-12 leading-relaxed">Available for freelance simulations, architectural consulting, or high-tier game engine deployment.</p>
+                
+                <div className="space-y-8">
+                  <div className="flex items-center group cursor-pointer">
+                    <div className="p-4 bg-slate-900 rounded-2xl mr-5 border border-zinc-800 group-hover:border-cyan-500 transition-colors">
+                      <Mail className="text-cyan-500" size={24} />
                     </div>
-                    <div className="flex items-center group/link">
-                      <div className="p-3 bg-zinc-900 rounded-lg mr-4 border border-zinc-800">
-                        <ShieldCheck className="text-green-500" size={20} />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[10px] mono text-green-500/60 uppercase font-black">Security_Protocol</span>
-                        <span className="text-zinc-200 font-bold italic">Encrypted_Transmission_Enabled</span>
-                      </div>
+                    <div>
+                      <span className="block text-[10px] mono text-cyan-500/50 uppercase font-black tracking-widest mb-1">Electronic_Mail</span>
+                      <span className="text-zinc-200 font-bold group-hover:text-cyan-400 transition-colors">annuetw143@gmail.com</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center group">
+                    <div className="p-4 bg-slate-900 rounded-2xl mr-5 border border-zinc-800">
+                      <Globe className="text-cyan-500" size={24} />
+                    </div>
+                    <div>
+                      <span className="block text-[10px] mono text-cyan-500/50 uppercase font-black tracking-widest mb-1">Geo_Coordinate</span>
+                      <span className="text-zinc-200 font-bold">Uttar Pradesh, India</span>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div className="lg:col-span-3">
-                <div className="glass p-8 rounded-2xl border border-green-500/10 relative overflow-hidden">
-                   {isTransmitting && (
-                     <div className="absolute inset-0 bg-black/90 z-50 flex items-center justify-center">
-                        <div className="w-full max-w-sm px-6">
-                           <Terminal 
-                              title="ENCRYPTING_DATA" 
-                              lines={[
-                                "GENERATING HANDSHAKE...",
-                                "WRAPPING PACKETS IN TLS...",
-                                "BYPASSING FIREWALLS...",
-                                "UPLINK ESTABLISHED.",
-                                "REDIRECTING TO COMMS_CENTER..."
-                              ]} 
-                           />
-                        </div>
-                     </div>
-                   )}
-                  <form onSubmit={handleContactSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-[10px] mono text-green-500 font-black uppercase tracking-widest ml-1">Input.User_Name</label>
-                        <input 
-                          required 
-                          name="name"
-                          type="text" 
-                          placeholder="IDENTIFY YOURSELF"
-                          className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 placeholder:text-zinc-700 focus:outline-none focus:border-green-500/50 focus:ring-1 focus:ring-green-500/20 transition-all mono text-sm"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] mono text-green-500 font-black uppercase tracking-widest ml-1">Input.Subject_Header</label>
-                        <input 
-                          required
-                          name="subject"
-                          type="text" 
-                          placeholder="MISSION_OBJECTIVE"
-                          className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 placeholder:text-zinc-700 focus:outline-none focus:border-green-500/50 focus:ring-1 focus:ring-green-500/20 transition-all mono text-sm"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label className="text-[10px] mono text-green-500 font-black uppercase tracking-widest ml-1">Input.Transmission_Body</label>
-                      <textarea 
-                        required
-                        name="message"
-                        rows={6}
-                        placeholder="ENTER ENCRYPTED MESSAGE CONTENT HERE..."
-                        className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-4 text-zinc-100 placeholder:text-zinc-700 focus:outline-none focus:border-green-500/50 focus:ring-1 focus:ring-green-500/20 transition-all mono text-sm resize-none"
+            <div className="lg:col-span-3">
+              <div className="glass p-8 rounded-3xl border border-cyan-500/10 relative overflow-hidden">
+                {isTransmitting && (
+                  <div className="absolute inset-0 bg-slate-950/95 z-50 flex items-center justify-center p-12">
+                    <div className="w-full max-w-sm">
+                      <Terminal 
+                        title="TRANSMITTING_PACKETS" 
+                        lines={["HANDSHAKE_INITIATED", "DATA_ENCRYPTED", "SENDING_UPLINK...", "REDIRECTING_TO_COMMS"]} 
                       />
                     </div>
-
-                    <button 
-                      type="submit"
-                      className="w-full py-4 bg-green-500 hover:bg-green-400 text-black font-black mono text-xs uppercase tracking-[0.3em] rounded-xl transition-all shadow-[0_0_30px_rgba(34,197,94,0.2)] hover:shadow-[0_0_40px_rgba(34,197,94,0.4)] hover:scale-[1.01] active:scale-95 flex items-center justify-center group"
-                    >
-                      <Send size={16} className="mr-3 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                      Initiate_Transmission
-                    </button>
-                  </form>
-                </div>
+                  </div>
+                )}
+                <form onSubmit={handleContactSubmit} className="space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-2">
+                      <label className="text-[10px] mono text-cyan-500 font-black uppercase tracking-widest ml-1">Identity.Name</label>
+                      <input required name="name" type="text" placeholder="WHO ARE YOU?" className="w-full bg-slate-900/50 border border-zinc-800 rounded-xl px-5 py-4 text-zinc-100 placeholder:text-zinc-700 focus:outline-none focus:border-cyan-500 transition-all mono text-sm" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] mono text-cyan-500 font-black uppercase tracking-widest ml-1">Mission.Subject</label>
+                      <input required name="subject" type="text" placeholder="MISSION GOAL" className="w-full bg-slate-900/50 border border-zinc-800 rounded-xl px-5 py-4 text-zinc-100 placeholder:text-zinc-700 focus:outline-none focus:border-cyan-500 transition-all mono text-sm" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] mono text-cyan-500 font-black uppercase tracking-widest ml-1">Transmission.Body</label>
+                    <textarea required name="message" rows={6} placeholder="ENCODE YOUR MESSAGE HERE..." className="w-full bg-slate-900/50 border border-zinc-800 rounded-xl px-5 py-5 text-zinc-100 placeholder:text-zinc-700 focus:outline-none focus:border-cyan-500 transition-all mono text-sm resize-none" />
+                  </div>
+                  <button type="submit" className="w-full py-5 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-black mono text-xs uppercase tracking-[0.4em] rounded-xl hover:scale-[1.02] transition-all flex items-center justify-center group shadow-[0_0_30px_rgba(6,182,212,0.2)]">
+                    <Send size={18} className="mr-3 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                    Initiate_Transfer
+                  </button>
+                </form>
               </div>
             </div>
           </div>
-        );
-    }
-  };
-
-  return (
-    <div className="min-h-screen relative flex flex-col">
-      {/* Simulation Room Modal */}
-      {activeSimulation && (
-        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-2xl flex flex-col animate-in fade-in duration-500">
-          <div className="bg-zinc-900 border-b border-green-500/20 px-6 py-4 flex items-center justify-between">
-             <div className="flex items-center space-x-4">
-                <div className="p-2 bg-green-500 rounded-lg text-black">
-                   <Gamepad2 size={18} />
-                </div>
-                <div>
-                   <h2 className="text-zinc-100 font-black italic uppercase tracking-tighter">SIMULATION: {activeSimulation.title}</h2>
-                   <div className="flex items-center space-x-4 text-[9px] mono text-green-500/60 font-black">
-                      <span className="flex items-center"><Activity size={10} className="mr-1" /> UPLINK_STABLE</span>
-                      <span>RESOLUTION: DYNAMIC</span>
-                   </div>
-                </div>
-             </div>
-             <div className="flex items-center space-x-3">
-                <button 
-                  onClick={() => setActiveSimulation(null)}
-                  className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-black px-4 py-2 rounded-lg mono text-[10px] font-black uppercase tracking-widest transition-all border border-red-500/30 flex items-center"
-                >
-                  <X size={14} className="mr-2" />
-                  Terminate_Simulation
-                </button>
-             </div>
-          </div>
-          
-          <div className="flex-1 relative flex">
-             {/* Simulation Sidebar */}
-             <div className="hidden lg:flex w-72 border-r border-green-500/10 flex-col p-6 space-y-6">
-                <div className="space-y-2">
-                   <label className="text-[9px] mono text-zinc-500 uppercase font-black">Build_Metadata</label>
-                   <div className="p-4 glass rounded-xl border border-zinc-800 space-y-3">
-                      <div className="flex justify-between items-center text-[10px] mono">
-                         <span className="text-zinc-400">ENGINE</span>
-                         <span className="text-green-500">UNITY_WEBGL</span>
-                      </div>
-                      <div className="flex justify-between items-center text-[10px] mono">
-                         <span className="text-zinc-400">ARCH</span>
-                         <span className="text-green-500">{activeSimulation.type}</span>
-                      </div>
-                   </div>
-                </div>
-                <div className="flex-1">
-                   <Terminal 
-                      title="SIM_LOGS" 
-                      lines={[
-                        `INIT ${activeSimulation.title}`,
-                        "ALLOCATING_BUFFERS...",
-                        "LOADING_ASSETS...",
-                        "READY_TO_START"
-                      ]} 
-                   />
-                </div>
-             </div>
-
-             {/* Iframe Viewport */}
-             <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden">
-                <div className="absolute inset-0 pointer-events-none z-10 opacity-20 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%]" />
-                {activeSimulation.play ? (
-                  <iframe 
-                    src={activeSimulation.play}
-                    className="w-full h-full border-0"
-                    allow="autoplay; fullscreen; keyboard"
-                    title={activeSimulation.title}
-                  />
-                ) : (
-                  <div className="text-center space-y-4">
-                     <Cpu size={48} className="mx-auto text-green-500 animate-pulse" />
-                     <p className="mono text-zinc-500 text-xs uppercase tracking-[0.3em]">No Playable WebGL Link Provided</p>
-                  </div>
-                )}
-             </div>
-          </div>
-        </div>
-      )}
-
-      {/* HUD Header */}
-      <header className="sticky top-0 z-40 bg-black/60 backdrop-blur-xl border-b border-green-500/10 px-8 py-5">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-4 group cursor-pointer" onClick={() => setActiveTab('HOME')}>
-            <div className="w-10 h-10 bg-green-500 flex items-center justify-center font-black text-black rounded-lg transform rotate-45 group-hover:rotate-0 transition-transform duration-500">
-               <span className="-rotate-45 group-hover:rotate-0 transition-transform">AK</span>
-            </div>
-            <div className="flex flex-col">
-                <span className="text-sm font-black text-zinc-100 tracking-tighter">ANNU_KUSHWAH</span>
-                <span className="text-[9px] font-bold mono tracking-widest text-green-500/60 uppercase">Sys_Kernel v2.5.0</span>
-            </div>
-          </div>
-          
-          <nav className="flex items-center space-x-1 sm:space-x-2 md:space-x-4">
-            {(['HOME', 'PROJECTS', 'EXPERIENCE', 'SKILLS', 'CONTACT'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`text-[9px] sm:text-[11px] font-black mono tracking-widest uppercase transition-all relative py-2.5 px-3 sm:px-4 rounded-lg
-                  ${activeTab === tab 
-                    ? 'text-black bg-green-500 shadow-[0_0_20px_rgba(34,197,94,0.4)]' 
-                    : 'text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800/50'}
-                `}
-              >
-                {tab}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto w-full px-8 py-12 md:py-20 flex-1">
-        {renderContent()}
+        </section>
       </main>
 
-      <footer className="bg-black/80 backdrop-blur-md border-t border-green-500/10 px-8 py-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-[10px] mono text-zinc-500 font-bold uppercase tracking-widest">
-          <div className="flex items-center space-x-10">
-            <span className="flex items-center text-zinc-400"><User size={14} className="mr-2 text-green-500" /> Annu Kushwah</span>
-            <div className="flex items-center space-x-4">
-                <div className="flex items-center text-green-500/60"><div className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse" /> Uplink Active</div>
+      <footer className="bg-slate-950/90 backdrop-blur-md border-t border-cyan-500/10 px-8 py-8 mt-20">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 text-[10px] mono text-zinc-500 font-bold uppercase tracking-widest">
+          <div className="flex items-center space-x-12">
+            <span className="flex items-center text-zinc-100"><Target size={14} className="mr-2 text-cyan-500" /> Annu Kushwah // Game Architect</span>
+            <div className="flex items-center space-x-6">
+                <div className="flex items-center text-green-500"><div className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse" /> LIVE_SYNC: 100%</div>
                 <div className="h-4 w-px bg-zinc-800" />
-                <div className="text-zinc-600">Ping: 12ms</div>
+                <div className="text-zinc-600">STABILITY: OPTIMAL</div>
             </div>
           </div>
           
-          <div className="flex items-center space-x-4 bg-zinc-900/50 px-4 py-2 rounded-full border border-zinc-800">
-            <span className="text-zinc-500">Design_Pattern:</span>
-            <span className="text-green-500">MVC_CLEAN_ARCH</span>
+          <div className="flex items-center space-x-4 bg-slate-900 px-6 py-2 rounded-full border border-zinc-800">
+             <span className="text-cyan-500/50">Pattern:</span>
+             <span className="text-cyan-400">CLEAN_CODE_ARCHITECTURE</span>
           </div>
 
-          <div className="group cursor-default">
-            &copy; 2024 <span className="text-zinc-300 group-hover:text-green-500 transition-colors">DELETION_PROTECTED</span>
+          <div className="text-zinc-600">
+            &copy; 2024 <span className="text-zinc-400">DATA_ARCHIVE_SECURED</span>
           </div>
         </div>
       </footer>
+      
+      {/* Floating Scroll Indicator */}
+      <div className="fixed bottom-10 right-10 z-30 pointer-events-none opacity-20 sm:opacity-100">
+        <div className="flex flex-col items-center">
+          <div className="h-24 w-px bg-gradient-to-t from-cyan-500 to-transparent mb-4" />
+          <div className="rotate-90 mono text-[9px] text-cyan-500 font-black uppercase tracking-[0.5em] origin-center">Scroll_Down</div>
+        </div>
+      </div>
     </div>
   );
 };
